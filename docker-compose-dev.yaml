@@ -1,0 +1,176 @@
+services:
+  auth:
+    container_name: "auth"
+    image: python-base:1.0.0
+    restart: on-failure
+    #    depends_on:
+    #      - cache
+    #      - db-users
+    working_dir: /opt/app/
+    volumes:
+      - ./auth/:/opt/app/auth/
+    ports:
+      - "8888:8888"
+    networks:
+      - auth-cache
+      - auth-db
+    env_file:
+      - ./envs/auth.env
+    command: [ "uvicorn", "auth.main:app", "--host", "0.0.0.0", "--port", "8888" "--reload" ]
+
+    cache:
+      container_name: "cache"
+      image: redis:7.0.3-alpine
+      restart: on-failure
+      volumes:
+        - cache:/data
+      ports:
+        - '6379:6379'
+      networks:
+        - auth-cache
+      command: redis-server --save 20 1 --loglevel warning
+
+      postgres:
+        image: "postgres:14-alpine"
+        ports:
+          - "5432:5432"
+        volumes:
+          - postgres_data:/var/lib/postgresql/data
+        env_file:
+          - ./envs/postgres.env
+        networks:
+          - todos-postgres
+          - auth-postgres
+        container_name: "postgres"
+
+networks:
+  auth-cache:
+    driver: bridge
+  auth-db:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  cache:
+
+
+#services:
+#  auth:
+#    build:
+#      context: auth_
+#      dockerfile: Dockerfile
+#    ports:
+#      - "50051:50051"
+#    networks:
+#      - todos-auth
+#      - auth-cache
+#      - auth-postgres
+#    restart: "on-failure"
+#    env_file:
+#      - ./envs/auth_old.env
+#      - ./envs/postgres.env
+#    depends_on:
+#      - postgres
+#      - cache
+#    volumes:
+#      - ./auth_:/code
+#      - ./models:/code/models
+#    command: watchmedo auto-restart --recursive --pattern="*.py" python server.py
+#    container_name: "auth_"
+#
+#  todos:
+#    build:
+#      context: ./todos
+#      dockerfile: Dockerfile
+#    ports:
+#      - "8888:8888"
+#    networks:
+#      - todos-postgres
+#      - todos-proxy
+#      - todos-auth
+#      - todos-frontend
+#    restart: "on-failure"
+#    env_file:
+#      - ./envs/postgres.env
+#    depends_on:
+#      - postgres
+#      - auth
+#    volumes:
+#      - ./todos:/code
+#      - ./models:/code/models
+#    container_name: "todos"
+#
+#  postgres:
+#    image: "postgres:14-alpine"
+#    ports:
+#      - "5432:5432"
+#    volumes:
+#      - postgres_data:/var/lib/postgresql/data
+#    env_file:
+#      - ./envs/postgres.env
+#    networks:
+#      - todos-postgres
+#      - auth-postgres
+#    container_name: "postgres"
+#
+#  cache:
+#    image: redis:7.0.3-alpine
+#    restart: always
+#    ports:
+#      - '6379:6379'
+#    command: redis-server --save 20 1 --loglevel warning
+#    volumes:
+#      - cache:/data
+#    networks:
+#      - auth-cache
+#    container_name: "cache"
+#
+#  frontend:
+#    build:
+#      context: ./frontend
+#      dockerfile: Dockerfile
+#    ports:
+#      - "3000:3000"
+#    networks:
+#      - frontend-proxy
+#      - todos-frontend
+#    restart: "on-failure"
+#    depends_on:
+#      - todos
+#    volumes:
+#      - ./frontend/node_modules:/code/node_modules
+#    container_name: "todos_frontend"
+#    command: npm start
+#
+#  proxy:
+#    build:
+#      context: ./proxy
+#      dockerfile: Dockerfile
+#    ports:
+#      - "80:80"
+#    networks:
+#      - todos-proxy
+#      - frontend-proxy
+#    depends_on:
+#      - todos
+#      - frontend
+#    container_name: "proxy"
+#
+#
+#networks:
+#  todos-postgres:
+#    driver: bridge
+#  todos-auth:
+#    driver: bridge
+#  todos-proxy:
+#    driver: bridge
+#  todos-frontend:
+#    driver: bridge
+#  auth-postgres:
+#    driver: bridge
+#  auth-cache:
+#    driver: bridge
+#  frontend-proxy:
+#    driver: bridge
+#
+

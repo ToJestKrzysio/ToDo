@@ -1,0 +1,1 @@
+docker build -t python-base:1.0.0 .
